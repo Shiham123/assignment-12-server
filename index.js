@@ -26,6 +26,7 @@ const run = async () => {
     // await client.connect();
     const surveyDatabase = client.db('polling-survey');
     const userCollection = surveyDatabase.collection('user');
+    const surveyCollection = surveyDatabase.collection('surveyItems');
 
     // Json web token
 
@@ -97,6 +98,18 @@ const run = async () => {
       response.send({ isNormalUser });
     });
 
+    app.get('/survey', verifyToken, async (request, response) => {
+      const result = await surveyCollection.find().toArray();
+      response.status(200).send(result);
+    });
+
+    app.get('/survey/item', async (request, response) => {
+      const result = await surveyCollection
+        .find({ status: 'published' })
+        .toArray();
+      response.status(200).send(result);
+    });
+
     // POST METHOD
     app.post('/users', async (request, response) => {
       const user = request.body;
@@ -112,17 +125,48 @@ const run = async () => {
       response.status(200).send(result);
     });
 
+    app.post('/survey', verifyToken, async (request, response) => {
+      const cursor = request.body;
+      const result = await surveyCollection.insertOne(cursor);
+      response.status(200).send(result);
+    });
+
     // PATCH METHOD
     app.patch('/users/admin/:id', verifyToken, async (request, response) => {
       const id = request.params.id;
       const query = { _id: new ObjectId(id) };
-
       const updatedDoc = {
         $set: {
           role: request.body.role,
         },
       };
       const result = await userCollection.updateOne(query, updatedDoc);
+      response.status(200).send(result);
+    });
+
+    app.patch('/survey/:id', verifyToken, async (request, response) => {
+      const id = request.params.id;
+      const query = { _id: new ObjectId(id) };
+
+      const updatedDoc = {
+        $set: {
+          status: request.body.status,
+        },
+      };
+      const result = await surveyCollection.updateOne(query, updatedDoc);
+      response.status(200).send(result);
+    });
+
+    // PUT METHOD
+    app.put('/survey/:id', verifyToken, async (request, response) => {
+      const id = request.params.id;
+      const query = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          message: request.body.enteredMessage,
+        },
+      };
+      const result = await surveyCollection.updateOne(query, updatedDoc);
       response.status(200).send(result);
     });
 
