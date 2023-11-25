@@ -2,7 +2,7 @@ const express = require('express');
 const app = express();
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 
 app.use(cors());
@@ -55,8 +55,7 @@ const run = async () => {
       });
     };
 
-    // get method here
-
+    // GET METHOD
     app.get('/users', verifyToken, async (request, response) => {
       const result = await userCollection.find().toArray();
       response.status(200).send(result);
@@ -99,7 +98,6 @@ const run = async () => {
     });
 
     // POST METHOD
-
     app.post('/users', async (request, response) => {
       const user = request.body;
       const query = { email: user.email };
@@ -111,6 +109,28 @@ const run = async () => {
           .send({ message: 'user exits', inserted: null });
 
       const result = await userCollection.insertOne(user);
+      response.status(200).send(result);
+    });
+
+    // PATCH METHOD
+    app.patch('/users/admin/:id', verifyToken, async (request, response) => {
+      const id = request.params.id;
+      const query = { _id: new ObjectId(id) };
+
+      const updatedDoc = {
+        $set: {
+          role: request.body.role,
+        },
+      };
+      const result = await userCollection.updateOne(query, updatedDoc);
+      response.status(200).send(result);
+    });
+
+    // DELETE METHOD
+    app.delete('/users/:id', verifyToken, async (request, response) => {
+      const id = request.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await userCollection.deleteOne(query);
       response.status(200).send(result);
     });
 
