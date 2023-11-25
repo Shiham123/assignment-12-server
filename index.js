@@ -80,6 +80,24 @@ const run = async () => {
       response.send({ isAdmin });
     });
 
+    app.get('/users/normal/:email', verifyToken, async (request, response) => {
+      const email = request.params.email;
+      const validationEmail = request.validUser.email;
+
+      if (email !== validationEmail)
+        return response.status(406).send({ message: 'unauthorized users' });
+
+      const query = { email: email };
+      const normalUser = await userCollection.findOne(query);
+      let isNormalUser = false;
+
+      if (normalUser) {
+        isNormalUser = normalUser?.role === 'user';
+      }
+
+      response.send({ isNormalUser });
+    });
+
     // POST METHOD
 
     app.post('/users', async (request, response) => {
