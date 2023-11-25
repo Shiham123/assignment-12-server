@@ -37,6 +37,49 @@ const run = async () => {
       response.status(200).send(token);
     });
 
+    // verify token
+
+    const verifyToken = (request, response, next) => {
+      const validHeaders = request.headers.validation;
+
+      if (!validHeaders) {
+        return response.status(401).send({ message: 'not valid token' });
+      }
+      const token = request.headers.validation.split(' ')[1];
+      jwt.verify(token, process.env.DB_SECRETE_KEY, (error, decoded) => {
+        if (error) {
+          return response.status(402).send({ message: 'not verified' });
+        }
+        request.validUser = decoded;
+        next();
+      });
+    };
+
+    // get method here
+
+    app.get('/users', verifyToken, async (request, response) => {
+      const result = await userCollection.find().toArray();
+      response.status(200).send(result);
+    });
+
+    app.get('/users/admin/:email', verifyToken, async (request, response) => {
+      const email = request.params.email;
+      const emailFromValidation = request.validUser.email;
+
+      if (email !== emailFromValidation) {
+        return response.status(405).send({ message: 'unauthorized users' });
+      }
+
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      let isAdmin = false;
+
+      if (user) {
+        isAdmin = user?.role === 'admin';
+      }
+      response.send({ isAdmin });
+    });
+
     // POST METHOD
 
     app.post('/users', async (request, response) => {
