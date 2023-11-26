@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const moment = require('moment/moment');
 require('dotenv').config();
+// const { v4: uuidv4 } = require('uuid');
 
 app.use(cors());
 app.use(express.json());
@@ -151,19 +152,24 @@ const run = async () => {
       const dataWithTimeStamp = {
         ...cursor,
         timestamp: formattedTime,
+        // visitId: uuidv4(),
       };
 
       const existingUser = await visitSurveyCollection.findOne({
         userEmail: dataWithTimeStamp.userEmail,
+        surveyItemId: dataWithTimeStamp.surveyItemId,
       });
+
+      if (existingUser === null) {
+        const result = await visitSurveyCollection.insertOne(dataWithTimeStamp);
+        response.status(200).send(result);
+        return;
+      }
 
       if (existingUser) {
         response.status(407).send({ message: 'Survey already added' });
         return;
       }
-
-      const result = await visitSurveyCollection.insertOne(dataWithTimeStamp);
-      response.status(200).send(result);
     });
 
     // PATCH METHOD
