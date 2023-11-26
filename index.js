@@ -28,6 +28,7 @@ const run = async () => {
     const surveyDatabase = client.db('polling-survey');
     const userCollection = surveyDatabase.collection('user');
     const surveyCollection = surveyDatabase.collection('surveyItems');
+    const visitSurveyCollection = surveyDatabase.collection('visitedSurvey');
 
     // Json web token
 
@@ -141,6 +142,27 @@ const run = async () => {
         timestamp: formattedTime,
       };
       const result = await surveyCollection.insertOne(dataWithTimeStamp);
+      response.status(200).send(result);
+    });
+
+    app.post('/visitedSurvey', verifyToken, async (request, response) => {
+      const cursor = request.body;
+      const formattedTime = moment().format('MMMM Do YYYY, h:mm:ss a');
+      const dataWithTimeStamp = {
+        ...cursor,
+        timestamp: formattedTime,
+      };
+
+      const existingUser = await visitSurveyCollection.findOne({
+        userEmail: dataWithTimeStamp.userEmail,
+      });
+
+      if (existingUser) {
+        response.status(407).send({ message: 'Survey already added' });
+        return;
+      }
+
+      const result = await visitSurveyCollection.insertOne(dataWithTimeStamp);
       response.status(200).send(result);
     });
 
