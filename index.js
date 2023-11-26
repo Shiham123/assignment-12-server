@@ -213,6 +213,55 @@ const run = async () => {
       response.status(200).send(result);
     });
 
+    //? AGGREGATE METHOD
+    app.get('/responseItem', verifyToken, async (request, response) => {
+      const result = await surveyCollection
+        .aggregate([
+          { $unwind: { path: '$_id', preserveNullAndEmptyArrays: true } },
+          { $addFields: { testIdString: { $toString: '$_id' } } },
+          {
+            $lookup: {
+              from: 'visitedSurvey',
+              localField: 'testIdString',
+              foreignField: 'surveyItemId',
+              as: 'responseData',
+            },
+          },
+          { $unwind: '$responseData' },
+          {
+            $group: {
+              _id: {
+                userName: '$responseData.userName',
+                userEmail: '$responseData.userEmail',
+                timestamp: '$responseData.timestamp',
+              },
+              totalYesVotes: {
+                $sum: {
+                  $cond: {
+                    if: { $eq: ['$responseData.vote', 'yes'] },
+                    then: 1,
+                    else: 0,
+                  },
+                },
+              },
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              totalYesVotes: { $sum: '$totalYesVotes' },
+              details: { $push: '$_id' },
+            },
+          },
+        ])
+        .toArray();
+
+      const detailedInformation = result.length > 0 ? result[0].details : [];
+      const totalYesVotes = result.length > 0 ? result[0].totalYesVotes : 0;
+
+      response.status(200).send({ detailedInformation, totalYesVotes });
+    });
+
     await client.db('admin').command({ ping: 1 });
     console.log('You successfully connected to MongoDB!');
   } catch (error) {
