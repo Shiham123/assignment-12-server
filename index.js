@@ -3,6 +3,7 @@ const app = express();
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const moment = require('moment/moment');
 require('dotenv').config();
 
 app.use(cors());
@@ -103,6 +104,13 @@ const run = async () => {
       response.status(200).send(result);
     });
 
+    app.get('/survey/details/:id', async (request, response) => {
+      const id = request.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await surveyCollection.findOne(query);
+      response.status(200).send(result);
+    });
+
     app.get('/survey/item', async (request, response) => {
       const result = await surveyCollection
         .find({ status: 'published' })
@@ -127,7 +135,12 @@ const run = async () => {
 
     app.post('/survey', verifyToken, async (request, response) => {
       const cursor = request.body;
-      const result = await surveyCollection.insertOne(cursor);
+      const formattedTime = moment().format('MMMM Do YYYY, h:mm:ss a');
+      const dataWithTimeStamp = {
+        ...cursor,
+        timestamp: formattedTime,
+      };
+      const result = await surveyCollection.insertOne(dataWithTimeStamp);
       response.status(200).send(result);
     });
 
