@@ -220,7 +220,7 @@ const run = async () => {
     });
 
     //? AGGREGATE METHOD
-    app.get('/responseItem', verifyToken, async (request, response) => {
+    app.get('/responseItem', async (request, response) => {
       const result = await surveyCollection
         .aggregate([
           { $unwind: { path: '$_id', preserveNullAndEmptyArrays: true } },
@@ -237,11 +237,12 @@ const run = async () => {
           {
             $group: {
               _id: {
+                surveyItemId: '$responseData.surveyItemId',
                 userName: '$responseData.userName',
                 userEmail: '$responseData.userEmail',
                 timestamp: '$responseData.timestamp',
               },
-              totalYesVotes: {
+              totalVotes: {
                 $sum: {
                   $cond: {
                     if: { $eq: ['$responseData.vote', 'yes'] },
@@ -254,18 +255,15 @@ const run = async () => {
           },
           {
             $group: {
-              _id: null,
-              totalYesVotes: { $sum: '$totalYesVotes' },
-              details: { $push: '$_id' },
+              _id: '$_id.surveyItemId',
+              totalVotesPerItem: { $sum: '$totalVotes' },
+              info: { $push: '$_id' },
             },
           },
         ])
         .toArray();
 
-      const detailedInformation = result.length > 0 ? result[0].details : [];
-      const totalYesVotes = result.length > 0 ? result[0].totalYesVotes : 0;
-
-      response.status(200).send({ detailedInformation, totalYesVotes });
+      response.status(200).send(result);
     });
 
     await client.db('admin').command({ ping: 1 });
