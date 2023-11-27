@@ -273,61 +273,66 @@ const run = async () => {
       response.status(200).send(result);
     });
 
-    app.get('/responseItem/:email', async (request, response) => {
-      const email = request.params.email;
-      const query = { surveyorEmail: email };
-      const resultTwo = await surveyCollection
-        .aggregate([
-          {
-            $match: query,
-          },
-          {
-            $addFields: {
-              covertString: { $toString: '$_id' },
+    app.get(
+      '/surveyorResponse/:email',
+      verifyToken,
+      async (request, response) => {
+        const email = request.params.email;
+        const query = { surveyorEmail: email };
+        const resultTwo = await surveyCollection
+          .aggregate([
+            {
+              $match: query,
             },
-          },
-          {
-            $lookup: {
-              from: 'visitedSurvey',
-              localField: 'covertString',
-              foreignField: 'surveyItemId',
-              as: 'resData',
-            },
-          },
-          {
-            $unwind: { path: '$resData', preserveNullAndEmptyArrays: true },
-          },
-          {
-            $group: {
-              _id: {
-                surveyItemId: '$resData.surveyItemId',
-                userName: '$resData.userName',
-                userEmail: '$resData.userEmail',
-                timestamp: '$resData.timestamp',
+            {
+              $addFields: {
+                covertString: { $toString: '$_id' },
               },
-              totalVotes: {
-                $sum: {
-                  $cond: {
-                    if: { $eq: ['$resData.vote', 'yes'] },
-                    then: 1,
-                    else: 0,
+            },
+            {
+              $lookup: {
+                from: 'visitedSurvey',
+                localField: 'covertString',
+                foreignField: 'surveyItemId',
+                as: 'resData',
+              },
+            },
+            {
+              $unwind: { path: '$resData', preserveNullAndEmptyArrays: true },
+            },
+            {
+              $group: {
+                _id: {
+                  surveyItemId: '$resData.surveyItemId',
+                  userName: '$resData.userName',
+                  userEmail: '$resData.userEmail',
+                  timestamp: '$resData.timestamp',
+                  report: '$resData.report',
+                },
+                totalVotes: {
+                  $sum: {
+                    $cond: {
+                      if: { $eq: ['$resData.vote', 'yes'] },
+                      then: 1,
+                      else: 0,
+                    },
                   },
                 },
               },
             },
-          },
-          {
-            $group: {
-              _id: '$_id.surveyItemId',
-              totalVotesPerItem: { $sum: '$totalVotes' },
-              info: { $push: '$_id' },
+            {
+              $group: {
+                _id: '$_id.surveyItemId',
+                totalVotesPerItem: { $sum: '$totalVotes' },
+                info: { $push: '$_id' },
+              },
             },
-          },
-        ])
-        .toArray();
+          ])
+          .toArray();
 
-      response.status(200).send(resultTwo);
-    });
+        response.status(200).send(resultTwo);
+      }
+    );
 
     await client.db('admin').command({ ping: 1 });
     console.log('You successfully connected to MongoDB!');
