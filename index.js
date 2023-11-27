@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const moment = require('moment/moment');
 require('dotenv').config();
+const stripe = require('stripe')(process.env.STRIPE_SECRETE_KEY);
 // const { v4: uuidv4 } = require('uuid');
 
 app.use(cors());
@@ -30,6 +31,7 @@ const run = async () => {
     const userCollection = surveyDatabase.collection('user');
     const surveyCollection = surveyDatabase.collection('surveyItems');
     const visitSurveyCollection = surveyDatabase.collection('visitedSurvey');
+    const paymentCollection = surveyDatabase.collection('pro-user');
 
     // Json web token
 
@@ -334,6 +336,38 @@ const run = async () => {
       }
     );
 
+    // PAYMENT METHOD
+    app.post('/create-payment-intent', async (request, response) => {
+      const { price } = request.body;
+      const amount = parseInt(price * 100);
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: 'usd',
+        payment_method_types: ['card'],
+      });
+      response.send({ clientSecret: paymentIntent.client_secret });
+    });
+
+    app.post('/payment-history', async (request, response) => {
+      const cursor = request.body;
+      const result = await paymentCollection.insertOne(cursor);
+      response.status(200).send(result);
+    });
+
+    app.patch('/pro/:email', async (request, response) => {
+      const email = request.params.email;
+      const query = { email: email };
+      const updatedDoc = {
+        $set: {
+          role: request.body.role,
+        },
+      };
+
+      const result = await userCollection.updateOne(query, updatedDoc);
+      response.status(200).send(result);
+    });
+
+    // ping
     await client.db('admin').command({ ping: 1 });
     console.log('You successfully connected to MongoDB!');
   } catch (error) {
