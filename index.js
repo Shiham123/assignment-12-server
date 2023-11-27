@@ -226,7 +226,7 @@ const run = async () => {
       response.status(200).send(result);
     });
 
-    //? AGGREGATE METHOD
+    // ? AGGREGATE METHOD
     app.get('/responseItem', async (request, response) => {
       const result = await surveyCollection
         .aggregate([
@@ -271,6 +271,62 @@ const run = async () => {
         .toArray();
 
       response.status(200).send(result);
+    });
+
+    app.get('/responseItem/:email', async (request, response) => {
+      const email = request.params.email;
+      const query = { surveyorEmail: email };
+      const resultTwo = await surveyCollection
+        .aggregate([
+          {
+            $match: query,
+          },
+          {
+            $addFields: {
+              covertString: { $toString: '$_id' },
+            },
+          },
+          {
+            $lookup: {
+              from: 'visitedSurvey',
+              localField: 'covertString',
+              foreignField: 'surveyItemId',
+              as: 'resData',
+            },
+          },
+          {
+            $unwind: { path: '$resData', preserveNullAndEmptyArrays: true },
+          },
+          {
+            $group: {
+              _id: {
+                surveyItemId: '$resData.surveyItemId',
+                userName: '$resData.userName',
+                userEmail: '$resData.userEmail',
+                timestamp: '$resData.timestamp',
+              },
+              totalVotes: {
+                $sum: {
+                  $cond: {
+                    if: { $eq: ['$resData.vote', 'yes'] },
+                    then: 1,
+                    else: 0,
+                  },
+                },
+              },
+            },
+          },
+          {
+            $group: {
+              _id: '$_id.surveyItemId',
+              totalVotesPerItem: { $sum: '$totalVotes' },
+              info: { $push: '$_id' },
+            },
+          },
+        ])
+        .toArray();
+
+      response.status(200).send(resultTwo);
     });
 
     await client.db('admin').command({ ping: 1 });
