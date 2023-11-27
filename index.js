@@ -120,6 +120,13 @@ const run = async () => {
       response.status(200).send(result);
     });
 
+    app.get('/adminResponse/:email', verifyToken, async (request, response) => {
+      const email = request.params.email;
+      const query = { surveyorEmail: email, status: 'unpublished' };
+      const result = await surveyCollection.find(query).toArray();
+      response.status(200).send(result);
+    });
+
     // POST METHOD
     app.post('/users', async (request, response) => {
       const user = request.body;
