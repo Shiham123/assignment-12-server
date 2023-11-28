@@ -61,6 +61,19 @@ const run = async () => {
       });
     };
 
+    // const verifyAdmin = async (request, response, next) => {
+    //   const email = request.validUser.email;
+    //   const query = { email: email };
+    //   console.log(query);
+
+    //   const user = await userCollection.findOne(query);
+    //   const isAdmin = user?.role === 'admin';
+
+    //   if (!isAdmin)
+    //     return response.status(403).send({ message: 'not an admin access' });
+    //   next();
+    // };
+
     // GET METHOD
     app.get('/users', verifyToken, async (request, response) => {
       const result = await userCollection.find().toArray();
@@ -104,7 +117,9 @@ const run = async () => {
     });
 
     app.get('/survey', verifyToken, async (request, response) => {
-      const result = await surveyCollection.find().toArray();
+      const result = await surveyCollection
+        .find({ status: 'pending' })
+        .toArray();
       response.status(200).send(result);
     });
 
@@ -214,6 +229,7 @@ const run = async () => {
       const updatedDoc = {
         $set: {
           message: request.body.enteredMessage,
+          status: request.body.status,
         },
       };
       const result = await surveyCollection.updateOne(query, updatedDoc);
@@ -250,6 +266,8 @@ const run = async () => {
                 userName: '$responseData.userName',
                 userEmail: '$responseData.userEmail',
                 timestamp: '$responseData.timestamp',
+                title: '$responseData.title',
+                category: '$responseData.category',
               },
               totalVotes: {
                 $sum: {
