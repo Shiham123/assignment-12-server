@@ -385,6 +385,11 @@ const run = async () => {
       response.status(200).send(result);
     });
 
+    app.get('/pro', async (request, response) => {
+      const result = await paymentCollection.find().toArray();
+      response.status(200).send(result);
+    });
+
     // ping
     await client.db('admin').command({ ping: 1 });
     console.log('You successfully connected to MongoDB!');
