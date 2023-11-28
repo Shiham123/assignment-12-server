@@ -328,6 +328,8 @@ const run = async () => {
                   userEmail: '$resData.userEmail',
                   timestamp: '$resData.timestamp',
                   report: '$resData.report',
+                  title: '$resData.title',
+                  category: '$resData.category',
                 },
                 totalVotes: {
                   $sum: {
