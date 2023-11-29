@@ -116,6 +116,23 @@ const run = async () => {
       response.send({ isNormalUser });
     });
 
+    app.get('/users/pro/:email', verifyToken, async (request, response) => {
+      const email = request.params.email;
+      const proValidation = request.validUser.email;
+
+      if (email !== proValidation)
+        return response.status(408).send({ message: 'unauthorized pro-user' });
+
+      const query = { email: email };
+      const proUser = await userCollection.findOne(query);
+      let isProUser = false;
+
+      if (proUser) {
+        isProUser = proUser?.role === 'pro-user';
+      }
+      response.send({ isProUser });
+    });
+
     app.get('/survey', verifyToken, async (request, response) => {
       const result = await surveyCollection
         .find({ status: 'pending' })
@@ -393,8 +410,8 @@ const run = async () => {
     });
 
     // ping;
-    // await client.db('admin').command({ ping: 1 });
-    // console.log('You successfully connected to MongoDB!');
+    await client.db('admin').command({ ping: 1 });
+    console.log('You successfully connected to MongoDB!');
   } catch (error) {
     console.dir(error);
   }
