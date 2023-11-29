@@ -139,7 +139,7 @@ const run = async () => {
 
     app.get('/adminResponse/:email', verifyToken, async (request, response) => {
       const email = request.params.email;
-      const query = { surveyorEmail: email, status: 'unpublished' };
+      const query = { surveyorEmail: email, status: 'unpublish' };
       const result = await surveyCollection.find(query).toArray();
       response.status(200).send(result);
     });
@@ -392,7 +392,7 @@ const run = async () => {
       response.status(200).send(result);
     });
 
-    // ping
+    // ping;
     // await client.db('admin').command({ ping: 1 });
     // console.log('You successfully connected to MongoDB!');
   } catch (error) {
