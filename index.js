@@ -253,6 +253,16 @@ const run = async () => {
       response.status(200).send(result);
     });
 
+    app.put('/survey/details/:id', async (request, response) => {
+      const id = request.params.id;
+      const query = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $push: { comment: request.body.comment },
+      };
+      const result = await surveyCollection.updateOne(query, updateDoc);
+      response.status(200).send(result);
+    });
+
     // DELETE METHOD
     app.delete('/users/:id', verifyToken, async (request, response) => {
       const id = request.params.id;
