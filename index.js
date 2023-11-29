@@ -239,6 +239,25 @@ const run = async () => {
       response.status(200).send(result);
     });
 
+    app.patch('/like/:id', async (request, response) => {
+      const id = request.params.id;
+      const query = { _id: new ObjectId(id) };
+
+      const updateDoc = { $inc: { liked: 1 } };
+
+      const result = await surveyCollection.updateOne(query, updateDoc);
+      response.status(200).send(result);
+    });
+
+    app.patch('/dislike/:id', async (request, response) => {
+      const id = request.params.id;
+      const query = { _id: new ObjectId(id) };
+
+      const updateDoc = { $inc: { disliked: 1 } };
+      const result = await surveyCollection.updateOne(query, updateDoc);
+      response.status(200).send(result);
+    });
+
     // PUT METHOD
     app.put('/survey/:id', verifyToken, async (request, response) => {
       const id = request.params.id;
